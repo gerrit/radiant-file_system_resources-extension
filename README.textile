@@ -29,3 +29,5 @@ RAILS_ROOT/radiant/snippets/your-snippet-name.radius</pre>
 * Register your layouts/snippets.  (needed only when add/remove, not on edit)
 <pre>rake radiant:extensions:file_system_resources:register</pre>
 * Your newly created layouts/snippets are now available to use in admin panel.
+* Optionally, move existing Snippets and Layouts from the DB into the file system, run 
+<pre>rake radiant:extensions:file_system_resources:dump</pre>

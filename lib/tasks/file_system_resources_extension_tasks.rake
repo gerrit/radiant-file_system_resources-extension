@@ -43,6 +43,30 @@ namespace :radiant do
         end
       end
       
+      desc "Move all Layouts and Snippets from the DB into the Filesystem"
+      task :dump => :environment do
+        [Layout, Snippet].each do |klass|
+          db_resources = klass.all.reject &:file_system_resource?
+          db_resources.each do |layout_or_snippet|
+            next if layout_or_snippet.file_system_resource?
+            filename = "#{layout_or_snippet.name}.radius"
+            path = Rails.root+'radiant'+klass.name.downcase.pluralize+filename
+            path.open 'w' do |file|
+              file << layout_or_snippet.content
+            end
+            layout_or_snippet.content = layout_or_snippet.name
+            layout_or_snippet.file_system_resource = true
+            # HACK: have to save without validations
+            # as the (standard) appendix to the name fails validation
+            unless layout_or_snippet.save(false)
+              path.unlink
+              raise "Error Saving: #{layout_or_snippet.inspect}"
+            end
+            puts "Dumped #{filename}"
+          end
+        end
+      end
+      
       desc "Registers file system resources in the database (needed only when added/removed, not on edit)."
       task :register => :environment do
         [Layout, Snippet].each do |klass|
@@ -66,6 +90,7 @@ namespace :radiant do
           end
         end
       end
+      
     end
   end
 end
