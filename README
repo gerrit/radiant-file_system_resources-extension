@@ -1,3 +1,7 @@
 = File System Resources
 
 This enables the use of Radius-based layouts and snippets on the file system. Layouts go in RAILS_ROOT/radiant/layouts, and snippets go in RAILS_ROOT/radiant/snippets.
+
+To move existing Snippets and Layouts from the DB into the file system, run 
+
+  rake radiant:extensions:file_system_resources:dump
