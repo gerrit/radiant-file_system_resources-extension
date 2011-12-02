@@ -6,6 +6,10 @@ class FileSystemResourcesExtension < Radiant::Extension
   description RadiantFileSystemResourcesExtension::DESCRIPTION
   url RadiantFileSystemResourcesExtension::URL
   
+  def self.resource_classes
+    [Layout, Snippet]
+  end
+  
   def activate
     Layout.send(:include, FileSystemResource)
     Snippet.send(:include, FileSystemResource)
