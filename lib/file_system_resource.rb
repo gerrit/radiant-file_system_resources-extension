@@ -1,3 +1,5 @@
+require 'pathname'
+
 module FileSystemResource
   def self.included(klass)
     klass.class_eval do
@@ -10,19 +12,23 @@ module FileSystemResource
       end
       
       def self.existing_files
-        Pathname.glob(dir + '*'+ext)
+        Pathname.glob(dir + "*#{ext}")
+      end
+      
+      def self.already_registered? filename
+        find_by_file_system_resource_and_content(true, filename)
       end
       
       # Returns a collection of records that were successfully registered
       def self.register
-        existing_files.collect do |path|
-          filename = path.basename ext
-          next if find_by_file_system_resource_and_content(true, filename)
-          create!(
+        filenames = existing_files.collect { |path| path.basename(ext).to_s }
+        unregistered_files = filenames.reject {|name| already_registered? name}
+        unregistered_files.collect do |filename|
+          new(
             :name => filename,
             :filename => filename,
             :file_system_resource => true
-          )
+          ).save(false)
         end
       end
       
@@ -33,10 +39,9 @@ module FileSystemResource
       # Returns a collection of records that were removed
       # because their corresponding file was deleted
       def self.unregister_deleted
-        find_all_by_file_system_resource(true).collect do |record|
-          next if existing_files.include? record.path
-          record.destroy
-        end
+        records = find_all_by_file_system_resource(true)
+        deleted = records.reject { |record| existing_files.include? record.path }
+        deleted.collect { |record| record.destroy }
       end
       
       def path
