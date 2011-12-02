@@ -30,21 +30,18 @@ namespace :radiant do
           mkdir_p RAILS_ROOT + directory, :verbose => false
           cp file, RAILS_ROOT + path, :verbose => false
         end
-
-        %w(layouts snippets).each do |dir|
-          FileUtils.mkdir_p(RAILS_ROOT + "/radiant/#{dir}")
+        
+        FileSystemResourcesExtension.resource_classes.each do |klass|
+          mkdir_p klass.dir
         end
       end
       
       desc "Move all Layouts and Snippets from the DB into the Filesystem"
       task :dump => :environment do
-        [Layout, Snippet].each do |klass|
+        FileSystemResourcesExtension.resource_classes.each do |klass|
           db_resources = klass.all.reject &:file_system_resource?
           db_resources.each do |layout_or_snippet|
-            next if layout_or_snippet.file_system_resource?
-            filename = "#{layout_or_snippet.name}.radius"
-            path = Rails.root+'radiant'+klass.name.downcase.pluralize+filename
-            path.open 'w' do |file|
+            layout_or_snippet.path.open 'w' do |file|
               file << layout_or_snippet.content
             end
             layout_or_snippet.content = layout_or_snippet.name
@@ -55,32 +52,17 @@ namespace :radiant do
               path.unlink
               raise "Error Saving: #{layout_or_snippet.inspect}"
             end
-            puts "Dumped #{filename}"
+            puts "Dumped #{layout_or_snippet.filename}"
           end
         end
       end
       
       desc "Registers file system resources in the database (needed only when added/removed, not on edit)."
       task :register => :environment do
-        [Layout, Snippet].each do |klass|
-          seen = []
-          fs_name = klass.name.downcase.pluralize
-          Dir[RAILS_ROOT + "/radiant/#{fs_name}/*.radius"].each do |f|
-            filename = File.basename(f, ".radius")
-            seen << filename
-            if klass.find_by_file_system_resource_and_content(true, filename)
-              puts "Skipped #{klass.name} #{filename} (already registered)."
-              next
-            else
-              name = (klass == Layout ? "[FS] #{filename}" : "fs_#{filename}")
-              klass.create!(:name => name, :filename => filename, :file_system_resource => true)
-              puts "Registered #{klass.name} #{filename}."
-            end
-          end          
-          klass.find_all_by_file_system_resource(true).reject{|e| seen.include?(e.filename)}.each do |e|
-            e.destroy
-            puts "Removed #{klass.name }#{e.filename} (no longer exists on file system)."
-          end
+        FileSystemResourcesExtension.resource_classes.each do |klass|
+          added, deleted = klass.register, klass.unregister_deleted
+          added.each { |a| puts "Registered #{a.class.name} #{a.filename}." }
+          deleted.each { |d| puts "Removed #{d.class.name }#{d.filename} (no longer exists on file system)." }
         end
       end
       

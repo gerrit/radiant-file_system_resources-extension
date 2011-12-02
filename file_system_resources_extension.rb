@@ -6,6 +6,10 @@ class FileSystemResourcesExtension < Radiant::Extension
   description "Adds support file system based layouts and snippets."
   url "http://terralien.com/"
   
+  def self.resource_classes
+    [Layout, Snippet]
+  end
+  
   def activate
     Layout.send(:include, FileSystemResource)
     Snippet.send(:include, FileSystemResource)
