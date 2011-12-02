@@ -39,7 +39,7 @@ namespace :radiant do
       desc "Move all Layouts and Snippets from the DB into the Filesystem"
       task :dump => :environment do
         FileSystemResourcesExtension.resource_classes.each do |klass|
-          db_resources = klass.all.reject &:file_system_resource?
+          db_resources = klass.all.reject(&:file_system_resource?)
           db_resources.each do |layout_or_snippet|
             layout_or_snippet.path.open 'w' do |file|
               file << layout_or_snippet.content
